@@ -1,0 +1,18 @@
+[
+  {
+    "d": "1",
+    "totalCount": 121,
+    "filter": {
+      "id": "withDeliveryOnly",
+      "currentValue": true
+    }
+  },
+  {
+    "d": null,
+    "totalCount": 187,
+    "filter": {
+      "id": "withDeliveryOnly",
+      "currentValue": false
+    }
+  }
+]

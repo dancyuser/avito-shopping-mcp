@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { AvitoClient, MAX_QUERY_LENGTH, parseItemId, validSearchQuery } from "../src/avito-client.js";
 import type { RuntimeConfig } from "../src/config.js";
 import { at, object } from "../src/json-fields.js";
+import { deliveryFilterApplied } from "../src/parsers.js";
 import { itemPageHtml, jsonFixture } from "./fixture.js";
 
 const session = vi.hoisted(() => ({ requestHtml: vi.fn(), requestJson: vi.fn() }));
@@ -17,14 +18,26 @@ vi.mock("../src/browser-session.js", () => ({
 const LISTING_URL = "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574";
 
 describe("AvitoClient.search filters", () => {
-  it("forwards filters and marks the result as unverified", async () => {
+  it("recognizes captured delivery on and off filter metadata", () => {
+    const rows = jsonFixture("delivery-filter-metadata.json") as { d: string | null; filter: { id: string; currentValue: boolean }; totalCount: number }[];
+    expect(rows.map((row) => [row.d, deliveryFilterApplied({ filtersV2: { Sections: [{ Filters: [row.filter] }] } }), row.totalCount])).toEqual([["1", true, 121], [null, false, 187]]);
+  });
+  it("returns listings only when the response confirms delivery", async () => {
     session.requestJson.mockReset();
-    session.requestJson.mockResolvedValueOnce(jsonFixture("search-web1-js-items.json"));
+    const fixture = object(jsonFixture("search-web1-js-items.json"));
+    session.requestJson.mockResolvedValueOnce({ ...fixture, filtersV2: { Sections: [{ Filters: [{ id: "withDeliveryOnly", currentValue: true }] }] } });
     const result = await new AvitoClient({} as RuntimeConfig).search({ query: "coffee", deliveryOnly: true, filterToken: "ASgBAg" });
     const url = new URL(session.requestJson.mock.calls[0]![0] as string);
     expect(url.searchParams.get("d")).toBe("1");
     expect(url.searchParams.get("f")).toBe("ASgBAg");
     expect(result.filterVerification).toBe("unverified");
+  });
+
+  it.each([false, undefined])("fails closed when delivery confirmation is %s", async (value) => {
+    session.requestJson.mockReset();
+    const fixture = object(jsonFixture("search-web1-js-items.json"));
+    session.requestJson.mockResolvedValueOnce({ ...fixture, filtersV2: { Sections: [{ Filters: [{ id: "withDeliveryOnly", currentValue: value }] }] } });
+    await expect(new AvitoClient({} as RuntimeConfig).search({ query: "coffee", deliveryOnly: true })).rejects.toMatchObject({ code: "FILTER_NOT_CONFIRMED" });
   });
 });
 

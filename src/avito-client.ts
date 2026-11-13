@@ -5,7 +5,7 @@ export { RATE_LIMIT_BACKOFF_MINUTES } from "./browser-session.js";
 import type { RuntimeConfig } from "./config.js";
 import { AvitoMcpError } from "./errors.js";
 import { parseItem, parseSellerUserKey, readBuyerItem } from "./item-page.js";
-import { parseLocations, parseRatingsPage, parseSearchPage } from "./parsers.js";
+import { deliveryFilterApplied, parseLocations, parseRatingsPage, parseSearchPage } from "./parsers.js";
 import type { ItemDetails, Location, SearchResult, SearchSort, SellerReview, SellerReviewsResult } from "./types.js";
 
 export interface SearchInput {
@@ -87,15 +87,16 @@ export class AvitoClient {
     const location = await this.resolveLocation(input.location ?? MOSCOW.name);
     const sort = input.sort ?? "default";
     const page = input.page ?? 1;
-    const result = parseSearchPage(
-      await this.session.requestJson(
-        searchApiUrl({ query, locationId: location.id, sort, page, priceMin: input.priceMin, priceMax: input.priceMax, deliveryOnly: input.deliveryOnly, filterToken: input.filterToken }),
-      ),
-      location,
+    const response = await this.session.requestJson(
+      searchApiUrl({ query, locationId: location.id, sort, page, priceMin: input.priceMin, priceMax: input.priceMax, deliveryOnly: input.deliveryOnly, filterToken: input.filterToken }),
     );
+    if (input.deliveryOnly && deliveryFilterApplied(response) !== true) {
+      throw new AvitoMcpError("FILTER_NOT_CONFIRMED", "Avito did not confirm the delivery filter; no unfiltered listings are returned.");
+    }
+    const result = parseSearchPage(response, location);
     const items = result.items.slice(0, input.limit ?? DEFAULT_SEARCH_LIMIT);
     return { query, location, sort, page, totalCount: result.totalCount, count: items.length, items,
-      ...(input.deliveryOnly || input.filterToken ? { filterVerification: "unverified" as const } : {}) };
+      ...(input.filterToken ? { filterVerification: "unverified" as const } : {}) };
   }
 
   async item(item: string): Promise<ItemDetails> {

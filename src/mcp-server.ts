@@ -84,7 +84,7 @@ export function createServer(client: AvitoClient): McpServer {
           .describe("default (Avito relevance), price (cheapest first), price_desc, date (newest first), discount"),
         priceMin: z.number().int().nonnegative().optional().describe("Minimum price in RUB"),
         priceMax: z.number().int().nonnegative().optional().describe("Maximum price in RUB"),
-        deliveryOnly: z.boolean().optional().describe("Request Avito Delivery only (experimental: Avito may change or ignore this filter)"),
+        deliveryOnly: z.boolean().optional().describe("Only listings with Avito Delivery; fails if Avito does not confirm the filter in its response"),
         filterToken: z.string().min(1).max(4096).regex(/^[A-Za-z0-9_-]+$/).optional().describe("Experimental encoded f filter token copied from an Avito search URL; category-dependent"),
         page: z.number().int().min(1).default(1).describe("Result page; Avito pages hold 50 listings"),
         limit: z.number().int().min(1).max(MAX_SEARCH_LIMIT).default(DEFAULT_SEARCH_LIMIT).describe("Listings to return from the page"),

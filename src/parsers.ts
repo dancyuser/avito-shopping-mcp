@@ -13,6 +13,20 @@ export interface RatingsPage {
   nextPage: string | null;
 }
 
+/** Avito's search filter metadata, when present, explicitly records the delivery checkbox state. */
+export function deliveryFilterApplied(response: unknown): boolean | null {
+  const sections = array(at(response, "filtersV2", "Sections"));
+  for (const section of sections) {
+    for (const filter of array(at(section, "Filters"))) {
+      if (at(filter, "id") === "withDeliveryOnly") {
+        const currentValue = at(filter, "currentValue");
+        return typeof currentValue === "boolean" ? currentValue : null;
+      }
+    }
+  }
+  return null;
+}
+
 const LISTING_TYPE = "item";
 const SEARCH_IMAGE_SIZE = "636x636";
 const SELLER_INFO_COMPONENT = "seller-info";
