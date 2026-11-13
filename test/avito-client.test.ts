@@ -16,6 +16,18 @@ vi.mock("../src/browser-session.js", () => ({
 
 const LISTING_URL = "https://www.avito.ru/moskva/bytovaya_tehnika/kofemashina_delonghi_magnifica_rapid_cappuccino_8457820574";
 
+describe("AvitoClient.search filters", () => {
+  it("forwards filters and marks the result as unverified", async () => {
+    session.requestJson.mockReset();
+    session.requestJson.mockResolvedValueOnce(jsonFixture("search-web1-js-items.json"));
+    const result = await new AvitoClient({} as RuntimeConfig).search({ query: "coffee", deliveryOnly: true, filterToken: "ASgBAg" });
+    const url = new URL(session.requestJson.mock.calls[0]![0] as string);
+    expect(url.searchParams.get("d")).toBe("1");
+    expect(url.searchParams.get("f")).toBe("ASgBAg");
+    expect(result.filterVerification).toBe("unverified");
+  });
+});
+
 describe("parseItemId", () => {
   it("accepts listing ids and Avito listing URLs", () => {
     expect(parseItemId(" 8457820574 ")).toBe(8_457_820_574);

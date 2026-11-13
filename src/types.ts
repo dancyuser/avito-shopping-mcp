@@ -25,6 +25,8 @@ export interface SearchItem {
 }
 
 export interface SearchResult {
+  /** Requested filters have not been independently verified in Avito's response. */
+  filterVerification?: "unverified";
   query: string;
   location: Location;
   sort: SearchSort;

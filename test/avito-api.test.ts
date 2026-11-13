@@ -10,6 +10,18 @@ import {
 } from "../src/avito-api.js";
 
 describe("searchApiUrl", () => {
+  it("includes requested delivery and category filters alongside other criteria", () => {
+    const url = new URL(searchApiUrl({ query: "беговая дорожка", locationId: 653240, sort: "date", page: 2, priceMax: 20000, deliveryOnly: true, filterToken: "ASgBAgECA0TKAuAK" }));
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({ query: "беговая дорожка", locationId: "653240", s: "104", p: "2", pmax: "20000", d: "1", f: "ASgBAgECA0TKAuAK" });
+  });
+
+  it("leaves delivery and category filters out when not requested", () => {
+    for (const deliveryOnly of [undefined, false]) {
+      const url = new URL(searchApiUrl({ query: "test", locationId: 637640, sort: "default", page: 1, deliveryOnly }));
+      expect(url.searchParams.has("d")).toBe(false);
+      expect(url.searchParams.has("f")).toBe(false);
+    }
+  });
   it("maps sort and price range to Avito parameters", () => {
     const url = new URL(
       searchApiUrl({ query: "кофемашина delonghi", locationId: 650_400, sort: "date", page: 2, priceMin: 5_000, priceMax: 60_000 }),

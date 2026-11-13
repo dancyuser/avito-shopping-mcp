@@ -14,6 +14,8 @@ export interface SearchInput {
   sort?: SearchSort | undefined;
   priceMin?: number | undefined;
   priceMax?: number | undefined;
+  deliveryOnly?: boolean | undefined;
+  filterToken?: string | undefined;
   page?: number | undefined;
   limit?: number | undefined;
 }
@@ -87,12 +89,13 @@ export class AvitoClient {
     const page = input.page ?? 1;
     const result = parseSearchPage(
       await this.session.requestJson(
-        searchApiUrl({ query, locationId: location.id, sort, page, priceMin: input.priceMin, priceMax: input.priceMax }),
+        searchApiUrl({ query, locationId: location.id, sort, page, priceMin: input.priceMin, priceMax: input.priceMax, deliveryOnly: input.deliveryOnly, filterToken: input.filterToken }),
       ),
       location,
     );
     const items = result.items.slice(0, input.limit ?? DEFAULT_SEARCH_LIMIT);
-    return { query, location, sort, page, totalCount: result.totalCount, count: items.length, items };
+    return { query, location, sort, page, totalCount: result.totalCount, count: items.length, items,
+      ...(input.deliveryOnly || input.filterToken ? { filterVerification: "unverified" as const } : {}) };
   }
 
   async item(item: string): Promise<ItemDetails> {

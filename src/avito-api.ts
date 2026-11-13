@@ -25,6 +25,8 @@ export interface SearchQuery {
   page: number;
   priceMin?: number | undefined;
   priceMax?: number | undefined;
+  deliveryOnly?: boolean | undefined;
+  filterToken?: string | undefined;
 }
 
 export function searchApiUrl(search: SearchQuery): string {
@@ -36,6 +38,8 @@ export function searchApiUrl(search: SearchQuery): string {
   });
   if (search.priceMin !== undefined) params.set("pmin", String(search.priceMin));
   if (search.priceMax !== undefined) params.set("pmax", String(search.priceMax));
+  if (search.deliveryOnly) params.set("d", "1");
+  if (search.filterToken) params.set("f", search.filterToken);
   return `${AVITO_ORIGIN}${SEARCH_API_PATH}?${params.toString()}`;
 }
 
